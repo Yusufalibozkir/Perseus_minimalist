@@ -1,0 +1,35 @@
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+
+# ── Virtual Environment ──
+.venv/
+venv/
+env/
+
+# ── Perseus Data (downloaded at setup) ──
+perseus_data/perseus_index.db
+perseus_data/perseus_index.db-wal
+perseus_data/perseus_index.db-shm
+perseus_data/www/
+perseus_data/repos/
+perseus_data/stanza_cache/
+
+# Keep Whitaker's Words morphology files (small, in repo)
+# perseus_data/morphology/
+
+# ── IDE / OS / Tools ──
+.vscode/
+.idea/
+.agents/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
