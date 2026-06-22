@@ -17,9 +17,9 @@ During installation, **check "Add Python to PATH"**.
 ### 2. Run Setup (one time)
 Double-click **`setup.bat`**. It will:
 1. Create a Python virtual environment
-2. Install dependencies (~5 min, 770 MB)
+2. Install dependencies (**CLTK/Stanza** for Greek morphology, **PyTorch**)
 3. Download texts and dictionaries from Perseus (~10 min, 930 MB)
-4. Build the search index (~2 min)
+4. Build the search index and load **Whitaker's Words** for Latin morphology (~2 min)
 
 ### 3. Start the Viewer
 Double-click **`start.bat`** — your browser opens to the home page.
