@@ -1,5 +1,9 @@
 # 📚 Perseus Minimalist v0.1
 
+<p align="center">
+  <img src="perseus_logo.png" width="120" height="120" style="border-radius:50%;" alt="Perseus Minimalist">
+</p>
+
 **Browse the Perseus Digital Library — completely offline, minimal & fast.**
 
 Download Greek and Latin classical texts (2 million+ lines), the LSJ Greek Lexicon,
