@@ -1,8 +1,4 @@
-# 📚 Perseus Minimalist v0.1
-
-<p align="center">
-  <img src="perseus_logo.png" width="120" height="120" style="border-radius:50%;" alt="Perseus Minimalist">
-</p>
+# <img src="perseus_logo.png" width="32" height="32" style="border-radius:50%;vertical-align:middle;margin-right:8px;" alt=""> Perseus Minimalist v0.1
 
 **Browse the Perseus Digital Library — completely offline, minimal & fast.**
 
