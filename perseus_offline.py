@@ -89,9 +89,10 @@ def download_zip(url, target_dir, repo_key):
     members = z.namelist()
     root_folder = members[0].split("/")[0] if members else ""
     
-    dest = target_dir / repo_key
-    if dest.exists():
-        shutil.rmtree(dest)
+    # Extract to a temp directory first, then swap
+    temp_dest = target_dir / (repo_key + "_tmp")
+    if temp_dest.exists():
+        shutil.rmtree(temp_dest)
     
     for member in members:
         # Strip the outer directory
@@ -101,13 +102,19 @@ def download_zip(url, target_dir, repo_key):
         new_path = parts[1]
         if not new_path:
             continue
-        full_path = dest / new_path
+        full_path = temp_dest / new_path
         if member.endswith("/"):
             full_path.mkdir(parents=True, exist_ok=True)
         else:
             full_path.parent.mkdir(parents=True, exist_ok=True)
             with z.open(member) as src, open(full_path, "wb") as dst:
                 shutil.copyfileobj(src, dst)
+    
+    # Extraction succeeded — now swap temp → real
+    dest = target_dir / repo_key
+    if dest.exists():
+        shutil.rmtree(dest)
+    temp_dest.rename(dest)
     
     log(f"  Done extracting {repo_key} to {dest}")
     return True
@@ -3626,6 +3633,50 @@ def cmd_download():
     log(f"\nRun 'python perseus_offline.py serve' to start the web viewer.")
 
 
+def cmd_rebuild():
+    """Rebuild the search index from existing repos (no download)."""
+    log("=" * 60)
+    log("Perseus Minimalist v0.1 — Rebuilding Index")
+    log("=" * 60)
+    
+    download_dir = DATA_DIR / "repos"
+    
+    if not (download_dir / "greek" / "data").exists() and not (download_dir / "latin" / "data").exists():
+        log("No existing repos found. Run 'download' first.")
+        return
+    
+    log("Using existing repos (no download)...")
+    
+    conn = init_db()
+    
+    # Clear old data
+    cur = conn.cursor()
+    cur.execute("DELETE FROM texts")
+    cur.execute("DELETE FROM dictionary_entries")
+    cur.execute("DELETE FROM texts_fts")
+    cur.execute("DELETE FROM dict_fts")
+    conn.commit()
+    
+    index_greek_latin_texts(conn, download_dir, "greek")
+    index_greek_latin_texts(conn, download_dir, "latin")
+    index_lexica(conn, download_dir)
+    rebuild_fts(conn)
+    
+    conn.close()
+    
+    log(f"\n✓ Index rebuilt!")
+    
+    conn2 = sqlite3.connect(str(DB_PATH))
+    cur = conn2.cursor()
+    cur.execute("SELECT COUNT(*) FROM texts")
+    log(f"  Texts indexed: {cur.fetchone()[0]:,}")
+    cur.execute("SELECT COUNT(*) FROM dictionary_entries")
+    log(f"  Dictionary entries: {cur.fetchone()[0]:,}")
+    conn2.close()
+    
+    log(f"\nRun 'python perseus_offline.py serve' to start the web viewer.")
+
+
 def cmd_serve():
     """Start the local web viewer."""
     if not DB_PATH.exists():
@@ -3685,13 +3736,15 @@ if __name__ == "__main__":
         "command",
         nargs="?",
         default="all",
-        choices=["download", "serve", "all"],
+        choices=["download", "rebuild", "serve", "all"],
         help="What to do (default: all)",
     )
     args = parser.parse_args()
     
     if args.command == "download":
         cmd_download()
+    elif args.command == "rebuild":
+        cmd_rebuild()
     elif args.command == "serve":
         cmd_serve()
     elif args.command == "all":

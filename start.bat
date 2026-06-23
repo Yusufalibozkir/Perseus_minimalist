@@ -22,12 +22,17 @@ echo.
 :: Step 2: Check data
 echo [2/3] Checking data...
 if not exist "perseus_data\perseus_index.db" (
-    echo   No data found. Downloading from Perseus now...
-    echo   (This happens once — ~930 MB, may take 10 minutes)
-    echo.
-    .venv\Scripts\python.exe perseus_offline.py download
+    if exist "perseus_data\repos\greek\data" (
+        echo   Database missing but repos found. Rebuilding index...
+        .venv\Scripts\python.exe perseus_offline.py rebuild
+    ) else (
+        echo   No data found. Downloading from Perseus now...
+        echo   (This happens once — ~930 MB, may take 10 minutes)
+        echo.
+        .venv\Scripts\python.exe perseus_offline.py download
+    )
     if !ERRORLEVEL! neq 0 (
-        echo   Download failed. Check your internet connection.
+        echo   Operation failed. Check your internet connection.
         pause
         exit /b 1
     )
