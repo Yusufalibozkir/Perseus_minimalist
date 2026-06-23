@@ -3222,7 +3222,7 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                 f"CASE WHEN full_text LIKE ? THEN substr(full_text, max(1, instr(full_text, ?)-100), 200) ELSE '' END as snip "
                 f"FROM texts WHERE {where_clause} "
                 f"ORDER BY word_count DESC LIMIT ? OFFSET ?",
-                params + [like_q, query, per_page, offset],
+                [like_q, query] + params + [per_page, offset],
             )
             results = cur.fetchall()
 
@@ -3279,7 +3279,7 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                     f"CASE WHEN full_text LIKE ? THEN substr(full_text, max(1, instr(full_text, ?)-100), 200) ELSE '' END as snip "
                     f"FROM texts WHERE {where_clause} "
                     f"ORDER BY word_count DESC LIMIT ? OFFSET ?",
-                    params + [like_q, query, per_page, offset],
+                    [like_q, query] + params + [per_page, offset],
                 )
                 results = cur.fetchall()
                 cur.execute(
