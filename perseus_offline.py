@@ -3193,15 +3193,15 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
         cur = conn.cursor()
         
         # Build the query with filters
-        # For FTS5, we use column-prefixed syntax when scope is author or title
-        fts_query = query
+        # FTS5 uses prefix matching with *, so "tusculan" → "tusculan*"
         if scope == "author":
-            # Escape double quotes in query for FTS5 column syntax
             safe_q = query.replace('"', '""')
-            fts_query = f'author:"{safe_q}"'
+            fts_query = f'author:"{safe_q}"*'
         elif scope == "title":
             safe_q = query.replace('"', '""')
-            fts_query = f'title:"{safe_q}"'
+            fts_query = f'title:"{safe_q}"*'
+        else:
+            fts_query = query + '*'
         
         # Try FTS5 search on texts
         try:
