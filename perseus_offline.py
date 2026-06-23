@@ -3192,73 +3192,31 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
         conn = self.get_db()
         cur = conn.cursor()
         
-        # Build the query with filters
-        # FTS5 uses prefix matching with *, so "tusculan" → "tusculan*"
+        # Search using LIKE (substring matching) for author/title, FTS5 for full text
+        like_q = f"%{query}%"
+
+        # Build WHERE clause based on scope and language
+        where_parts = []
+        params = []
+
         if scope == "author":
-            safe_q = query.replace('"', '""')
-            fts_query = f'author:"{safe_q}"*'
+            where_parts.append("author LIKE ?")
+            params.append(like_q)
         elif scope == "title":
-            safe_q = query.replace('"', '""')
-            fts_query = f'title:"{safe_q}"*'
+            where_parts.append("title LIKE ?")
+            params.append(like_q)
         else:
-            fts_query = query + '*'
-        
-        # Try FTS5 search on texts
+            where_parts.append("(author LIKE ? OR title LIKE ?)")
+            params.extend([like_q, like_q])
+
+        if lang_filter:
+            where_parts.append("lang = ?")
+            params.append(lang_filter)
+
+        where_clause = " AND ".join(where_parts)
+
+        # Try LIKE search first (finds partial matches like "tusculan" → "Tusculanae")
         try:
-            if lang_filter:
-                cur.execute("""
-                    SELECT t.id, t.author, t.title, t.lang, t.word_count,
-                           snippet(texts_fts, 2, '<em>', '</em>', '...', 40) as snip
-                    FROM texts_fts f JOIN texts t ON t.id = f.rowid
-                    WHERE texts_fts MATCH ? AND t.lang = ?
-                    ORDER BY rank LIMIT ? OFFSET ?
-                """, (fts_query, lang_filter, per_page, offset))
-                results = cur.fetchall()
-                
-                cur.execute("""
-                    SELECT COUNT(*) FROM texts_fts f JOIN texts t ON t.id = f.rowid
-                    WHERE texts_fts MATCH ? AND t.lang = ?
-                """, (fts_query, lang_filter))
-            else:
-                cur.execute("""
-                    SELECT t.id, t.author, t.title, t.lang, t.word_count,
-                           snippet(texts_fts, 2, '<em>', '</em>', '...', 40) as snip
-                    FROM texts_fts f JOIN texts t ON t.id = f.rowid
-                    WHERE texts_fts MATCH ?
-                    ORDER BY rank LIMIT ? OFFSET ?
-                """, (fts_query, per_page, offset))
-                results = cur.fetchall()
-                
-                cur.execute("""
-                    SELECT COUNT(*) FROM texts_fts WHERE texts_fts MATCH ?
-                """, (fts_query,))
-            
-            total = cur.fetchone()[0]
-        except Exception:
-            # Fallback to LIKE search when FTS5 syntax fails
-            like_q = f"%{query}%"
-            
-            # Build WHERE clause based on scope and language
-            where_parts = []
-            params = []
-            
-            if scope == "author":
-                where_parts.append("author LIKE ?")
-                params.append(like_q)
-            elif scope == "title":
-                where_parts.append("title LIKE ?")
-                params.append(like_q)
-            else:
-                where_parts.append("(author LIKE ? OR title LIKE ? OR full_text LIKE ?)")
-                params.extend([like_q, like_q, like_q])
-            
-            if lang_filter:
-                where_parts.append("lang = ?")
-                params.append(lang_filter)
-            
-            where_clause = " AND ".join(where_parts)
-            
-            count_params = params.copy()
             cur.execute(
                 f"SELECT id, author, title, lang, word_count, "
                 f"CASE WHEN full_text LIKE ? THEN substr(full_text, max(1, instr(full_text, ?)-100), 200) ELSE '' END as snip "
@@ -3267,12 +3225,68 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                 params + [like_q, query, per_page, offset],
             )
             results = cur.fetchall()
-            
+
             cur.execute(
                 f"SELECT COUNT(*) FROM texts WHERE {where_clause}",
-                count_params,
+                params,
             )
             total = cur.fetchone()[0]
+
+            # If LIKE returns nothing, try FTS5 full-text search as fallback
+            if not results and scope == "all":
+                raise Exception("Try FTS5 fallback")
+        except Exception:
+            # FTS5 full-text fallback (for searching within document bodies)
+            try:
+                fts_query = query.replace('"', '""') + '*'
+                if lang_filter:
+                    cur.execute("""
+                        SELECT t.id, t.author, t.title, t.lang, t.word_count,
+                               snippet(texts_fts, 2, '<em>', '</em>', '...', 40) as snip
+                        FROM texts_fts f JOIN texts t ON t.id = f.rowid
+                        WHERE texts_fts MATCH ? AND t.lang = ?
+                        ORDER BY rank LIMIT ? OFFSET ?
+                    """, (fts_query, lang_filter, per_page, offset))
+                    results = cur.fetchall()
+                    cur.execute("""
+                        SELECT COUNT(*) FROM texts_fts f JOIN texts t ON t.id = f.rowid
+                        WHERE texts_fts MATCH ? AND t.lang = ?
+                    """, (fts_query, lang_filter))
+                else:
+                    cur.execute("""
+                        SELECT t.id, t.author, t.title, t.lang, t.word_count,
+                               snippet(texts_fts, 2, '<em>', '</em>', '...', 40) as snip
+                        FROM texts_fts f JOIN texts t ON t.id = f.rowid
+                        WHERE texts_fts MATCH ?
+                        ORDER BY rank LIMIT ? OFFSET ?
+                    """, (fts_query, per_page, offset))
+                    results = cur.fetchall()
+                    cur.execute("""
+                        SELECT COUNT(*) FROM texts_fts WHERE texts_fts MATCH ?
+                    """, (fts_query,))
+                total = cur.fetchone()[0]
+            except Exception:
+                # Ultimate fallback: LIKE on full_text too
+                like_q = f"%{query}%"
+                where_parts = ["(author LIKE ? OR title LIKE ? OR full_text LIKE ?)"]
+                params = [like_q, like_q, like_q]
+                if lang_filter:
+                    where_parts.append("lang = ?")
+                    params.append(lang_filter)
+                where_clause = " AND ".join(where_parts)
+                cur.execute(
+                    f"SELECT id, author, title, lang, word_count, "
+                    f"CASE WHEN full_text LIKE ? THEN substr(full_text, max(1, instr(full_text, ?)-100), 200) ELSE '' END as snip "
+                    f"FROM texts WHERE {where_clause} "
+                    f"ORDER BY word_count DESC LIMIT ? OFFSET ?",
+                    params + [like_q, query, per_page, offset],
+                )
+                results = cur.fetchall()
+                cur.execute(
+                    f"SELECT COUNT(*) FROM texts WHERE {where_clause}",
+                    params,
+                )
+                total = cur.fetchone()[0]
         
         conn.close()
         
