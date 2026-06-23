@@ -110,11 +110,12 @@ def download_zip(url, target_dir, repo_key):
             with z.open(member) as src, open(full_path, "wb") as dst:
                 shutil.copyfileobj(src, dst)
     
-    # Extraction succeeded — now swap temp → real
+    # Extraction succeeded — now copy temp → real
     dest = target_dir / repo_key
     if dest.exists():
         shutil.rmtree(dest)
-    temp_dest.rename(dest)
+    shutil.copytree(temp_dest, dest)
+    shutil.rmtree(temp_dest)
     
     log(f"  Done extracting {repo_key} to {dest}")
     return True
