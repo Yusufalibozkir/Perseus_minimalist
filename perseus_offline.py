@@ -1819,9 +1819,9 @@ HTML_FOOTER = """
 })();
 </script>
 <div class="perseus-footer">
-<p>Texts from the <a href="http://www.perseus.tufts.edu/">Perseus Digital Library</a> 
-(Tufts University), licensed under CC BY-SA 4.0.</p>
-<p>Downloaded from <a href="https://github.com/PerseusDL">github.com/PerseusDL</a>.</p>
+<p><a href="https://github.com/Yusufalibozkir/Perseus_minimalist">Perseus Minimalist v0.1</a>
+ — Classical texts from the <a href="http://www.perseus.tufts.edu/">Perseus Digital Library</a>, 
+licensed under CC BY-SA 4.0.</p>
 </div>
 </div></body></html>"""
 
