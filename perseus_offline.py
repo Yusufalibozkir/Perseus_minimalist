@@ -226,7 +226,7 @@ def beta_to_greek(beta):
             capitalize_next = True
             i += 1
             # Collect any diacritics that immediately follow *
-            while i < len(beta) and beta[i] in ')(/\\=+|':
+            while i < len(beta) and beta[i] in ')(/\\=+|^':
                 d = beta[i]
                 if d == ')':
                     pending_breathing = smooth
@@ -295,7 +295,7 @@ def beta_to_greek(beta):
             elif next_ch == '\\':
                 accent = grave
                 i += 1
-            elif next_ch == '=':
+            elif next_ch in ('=', '^'):
                 accent = circum
                 i += 1
             elif next_ch == '+':
@@ -1476,6 +1476,8 @@ def parse_lsj_entry(xml_path):
             # Greek entry: convert Beta Code to Unicode Greek
             headword_greek = beta_to_greek(raw)
             headword_greek = ' '.join(headword_greek.split())
+            # Clean up any remaining Beta Code artifacts (stray ^, etc.)
+            headword_greek = headword_greek.rstrip('^,;:.|')
             headword = raw  # Keep original Beta Code as headword
             
             # Plain form from the Greek version (diacritic-stripped, lowered)
@@ -1483,6 +1485,7 @@ def parse_lsj_entry(xml_path):
             headword_plain = ''.join(
                 c for c in nfkd.lower() if unicodedata.category(c) != 'Mn'
             )
+            # Also clean plain form of any artifacts
             headword_plain = headword_plain.replace('\u03c2', '\u03c3')
             
             # ── For Greek (LSJ): extract English definitions from <tr> elements ──
