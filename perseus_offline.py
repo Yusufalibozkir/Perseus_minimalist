@@ -581,6 +581,36 @@ IRREGULAR_LATIN_FORMS = {
     'deest': {'lemma': 'desum', 'pos': 'V', 'tense': 'PRES', 'voice': 'ACTIVE', 'mood': 'IND', 'person': '3', 'number': 'S'},
     'obest': {'lemma': 'obsum', 'pos': 'V', 'tense': 'PRES', 'voice': 'ACTIVE', 'mood': 'IND', 'person': '3', 'number': 'S'},
     'subest': {'lemma': 'subsum', 'pos': 'V', 'tense': 'PRES', 'voice': 'ACTIVE', 'mood': 'IND', 'person': '3', 'number': 'S'},
+    # Possessive adjectives (not in Whitaker's Words DICTLINE)
+    # Note: only forms NOT already in DICTLINE as verbs/other words
+    'meus': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'mea': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'meum': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'N', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'meae': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'meam': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'ACC', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'meos': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'ACC', 'number': 'P', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'meas': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'ACC', 'number': 'P', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'meorum': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'P', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'mearum': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'P', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'meis': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'DAT', 'number': 'P', 'gender': None, 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'tuus': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'tua': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'tuum': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'N', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'tuae': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'tuam': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'ACC', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'tuos': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'ACC', 'number': 'P', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'tuarum': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'P', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'tuorum': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'P', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'tuis': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'DAT', 'number': 'P', 'gender': None, 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'suus': {'lemma': 'suus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'sua': {'lemma': 'suus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'suum': {'lemma': 'suus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'N', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'suae': {'lemma': 'suus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'suam': {'lemma': 'suus', 'pos': 'ADJ', 'case': 'ACC', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'suos': {'lemma': 'suus', 'pos': 'ADJ', 'case': 'ACC', 'number': 'P', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'suarum': {'lemma': 'suus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'P', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'suorum': {'lemma': 'suus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'P', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'suis': {'lemma': 'suus', 'pos': 'ADJ', 'case': 'DAT', 'number': 'P', 'gender': None, 'tense': '', 'voice': '', 'mood': '', 'person': ''},
 }
 
 # DICTLINE.GEN fixed-width column positions
@@ -2289,9 +2319,16 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                     "a", "e", "i", "o", "s", "t", "u",
                 )
                 for ending in endings:
-                    if len(s) > len(ending) + 2 and s.endswith(ending):
+                    if len(s) >= len(ending) + 2 and s.endswith(ending):
                         stem = s[:-len(ending)]
                         add(stem)
+                        # For genitive/plural endings, prefer nominative singular forms (us, a, um)
+                        # before other inflected forms (o, e, i) to avoid matching verbs
+                        # when the word is a noun/adjective (e.g. "meorum" → "meus", not "meo")
+                        if ending in ('orum', 'arum', 'ius', 'iae', 'iorum'):
+                            add(stem + "us")
+                            add(stem + "a")
+                            add(stem + "um")
                         add(stem + "a")
                         add(stem + "e")
                         add(stem + "i")
@@ -2308,7 +2345,7 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                     "ῃ", "ῳ", "ε", "α", "ς", "ν",
                 )
                 for ending in endings:
-                    if len(s) > len(ending) + 1 and s.endswith(ending):
+                    if len(s) >= len(ending) + 1 and s.endswith(ending):
                         stem = s[:-len(ending)]
                         add(stem)
                         add(stem + "α")
@@ -2387,15 +2424,21 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
         # Strategy 3: Candidate lemma-style matches for common inflections
         if not results and len(candidates) > 1:
             placeholders = ",".join("?" for _ in candidates[1:])
-            # Prefer exact headword_plain matches over prefix matches of shorter words
+            # Prefer noun/adjective endings over verb endings for genitive-stripped stems
             results = query_with_filter(f"""
                 SELECT headword, headword_greek, definition, source
                 FROM dictionary_entries
                 WHERE headword_plain IN ({placeholders})
                 ORDER BY
                     CASE
-                        WHEN headword_plain = ? THEN 0
+                        WHEN headword_plain = ? AND LENGTH(headword_plain) > 2 THEN 0
                         ELSE 1
+                    END,
+                    CASE
+                        WHEN headword_plain LIKE '%us' THEN 0
+                        WHEN headword_plain LIKE '%um' THEN 1
+                        WHEN headword_plain LIKE '%a' THEN 2
+                        ELSE 3
                     END,
                     LENGTH(headword) ASC
                 LIMIT 5
