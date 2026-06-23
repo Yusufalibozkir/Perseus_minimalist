@@ -1009,45 +1009,76 @@ def clean_latin_definition(raw_def, lemma_info=None):
     """
     Clean a raw dictionary definition into a concise summary.
     
-    Extracts just the headword, principal parts, and general meaning,
-    stripping away the long citation lists and specific usage examples.
-    
-    If lemma_info (from DICTLINE) is provided, uses its short meaning.
+    For Lewis & Short pipe format: "headword | POS | etymology | definition..."
+    Extracts: POS as a badge, the English definition, strips citations.
     """
     if not raw_def:
         return ''
     
     # Try to use Whitaker's Words short definition if available
     if lemma_info and len(lemma_info) < 300:
-        # Format: "1 DEP X X X A O follow; escort; ..."
-        # Strip the leading flag codes (number + uppercase words) to get just the definition
-        clean = lemma_info
-        # Remove leading number and all-caps flag words
         import re as _re
-        # Pattern: starts with digit(s) followed by uppercase words, then lowercase definition
+        clean = lemma_info
         clean = _re.sub(r'^\d+\s+[A-Z]+\s+', '', clean)
-        # Remove any remaining flag codes (patterns of uppercase letters) before the definition
-        # Flag codes are usually: X, A, B, C, D, E, F, L, O, S, T, N, M, P etc. in groups
         clean = _re.sub(r'\b[A-Z](?:\s+[A-Z]){2,}\s+', '', clean)
-        # Remove trailing semicolons and whitespace
         clean = clean.strip().strip(';|').strip()
         if clean and len(clean) < 300:
             return clean
     
-    # Fallback: extract summary from Lewis & Short entry
-    # We want just the headword info and general meaning, NOT citations
+    # For Lewis & Short pipe-delimited format
+    parts = [p.strip() for p in raw_def.split('|')]
     
-    text = raw_def
+    # Find the POS tag: a short token with a period (e.g. "adv.", "v.", "adj.", "m.", "f.")
+    # Part 0 is always the headword
+    pos = ''
+    def_start = 1
+    if len(parts) >= 2:
+        for i in range(1, len(parts)):
+            p = parts[i]
+            # Check if this looks like a POS/grammar tag (abbreviation with period)
+            if re.match(r'^[a-zA-Z]+\.(?:\s[a-zA-Z]+\.)*$', p) or re.match(r'^[mfnca]\\.$', p):
+                pos = p
+                def_start = i + 1
+                break
+        # If no POS tag found, try part 1 as genitive (for noun entries like "mos | moris | m. | ...")
+        if not pos and len(parts) >= 3:
+            # Maybe part 1 is a genitive form, part 2 is gender (m./f./n.)
+            for i in range(2, len(parts)):
+                p = parts[i]
+                if re.match(r'^[mfnca]\.$', p):
+                    pos = p
+                    def_start = i + 1
+                    break
     
-    # Remove the etymological info in brackets (contains author names)
-    text = re.sub(r'\[.*?\]', '', text)
+    def_text = ' | '.join(parts[def_start:]) if def_start < len(parts) else ''
     
-    # Strip parenthetical notes that are just cross-references
-    text = re.sub(r'\([^)]*\b(cf\.|id\.|ib\.|ibid\.|l\.l\.|s\.v\.|sqq?\.)[^)]*\)', '', text)
+    # Clean up the definition text
+    # Remove etymological info in brackets
+    def_text = re.sub(r'\[.*?\]', '', def_text)
+    # Strip parenthetical cross-references
+    def_text = re.sub(r'\([^)]*\b(cf\.|id\.|ib\.|ibid\.|l\.l\.|s\.v\.|sqq?\.)[^)]*\)', '', def_text)
+    # Strip author citations at sentence boundaries
+    author_pat = r'(?:^|[.;])\s*(?=(?:Plaut|Cic|Ter|Verg|Hor|Ov|Liv|Caes|Catull|Tib|Prop|Plin|Quint|Tac|Suet|Stat|Lucr|Juv|Mart|Sen|Curt|Just|Gell|Nep|Phaedr|Enn|Lucil|Pacuv|Acc|Afran|Caecil|Apul|Amm|Eutr|Fest|Prisc|Charis|Diom|Don|Serv|Schol|Aug|Hier|Ambros|Greg|Isid|H\.|Id\.|Ib\.)\.)'
+    author_match = re.search(author_pat, def_text)
+    if author_match:
+        def_text = def_text[:author_match.start() + 1]
     
-    # Find the first citation author name and truncate there
-    # These are the boundaries between definition and citations
-    author_pattern = r'(?:^|[.;])\s*(?=(?:Plaut|Cic|Ter|Verg|Hor|Ov|Liv|Caes|Catull|Tib|Prop|Plin|Quint|Tac|Suet|Stat|Lucr|Juv|Mart|Sen|Curt|Just|Gell|Nep|Phaedr|Enn|Lucil|Pacuv|Acc|Afran|Caecil|Apul|Amm|Eutr|Fest|Prisc|Charis|Diom|Don|Serv|Schol|Aug|Hier|Ambros|Greg|Isid|H\.|Id\.|Ib\.)\.)'
+    # Strip sense markers
+    sense_pat = r'(?:^|[.;])\s*(?=(?:Absol|Transf?|Metaph?|Esp\.|Freq\.|Poet\.|In\s+gen\.|In\s+partic\.|In\s+pass\.|With\s+acc\.|With\s+dat\.|With\s+gen\.|With\s+abl\.|With\s+inf\.|With\s+ut|With\s+ne|With\s+clause)\b)'
+    sense_match = re.search(sense_pat, def_text)
+    if sense_match and sense_match.start() > 0:
+        def_text = def_text[:sense_match.start() + 1]
+    
+    # Clean up whitespace and truncate
+    def_text = re.sub(r'\s+', ' ', def_text).strip()
+    def_text = re.sub(r'[;,.]+$', '', def_text).strip()
+    if len(def_text) > 400:
+        def_text = def_text[:397] + '...'
+    
+    # If we extracted a POS tag, prepend it
+    if pos:
+        return f'{pos} — {def_text}' if def_text else pos
+    return def_text or raw_def[:200]
     author_match = re.search(author_pattern, text)
     if author_match:
         text = text[:author_match.start() + 1]  # Keep up to the boundary
@@ -2444,10 +2475,12 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                 def_text = definition
             else:
                 def_text = definition[:200] + "…" if len(definition) > 200 else definition
+            short_def = clean_latin_definition(definition, '')
             entries.append({
                 "headword": headword,
                 "headword_greek": headword_greek or "",
                 "definition": def_text,
+                "short_definition": short_def if short_def and short_def != headword else '',
                 "source": source,
             })
         
@@ -2953,6 +2986,15 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                 xhr.send();
             }}
             
+            function formatDef(text) {{
+                if (!text) return '';
+                // Color POS tags: patterns like "adv. —", "v. a. —", "adj. —", "m. —", etc.
+                return text.replace(
+                    /^([a-zA-Z]+(?:\s[a-zA-Z]+)?\.)\s*—\s*/,
+                    '<span style="display:inline-block;background:#e8ddd0;color:#6a4a2a;font-size:0.8em;font-weight:600;padding:1px 6px;border-radius:3px;margin-right:4px;">$1</span> — '
+                );
+            }}
+            
             function buildParseEntryHtml(result, full) {{
                 var html = '<div style="padding:6px 0;border-bottom:1px solid #f0ebe4;">';
                 // Lemma with summary (principal parts)
@@ -2973,7 +3015,7 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                 if (!full && def.length > 200) def = def.substring(0, 200) + '...';
                 if (def) {{
                     html += '<div style="margin-top:4px;color:#2f2a24;white-space:pre-wrap;font-size:0.9em;">' +
-                        '— ' + def + '</div>';
+                        formatDef(def) + '</div>';
                 }}
                 html += '</div>';
                 return html;
@@ -2984,11 +3026,13 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                     ? entry.headword_greek + ' <span style="font-size:0.75em;color:#aaa;">(' + entry.headword + ')</span>'
                     : entry.headword;
                 var def = full ? entry.definition : (entry.definition.length > 200 ? entry.definition.substring(0, 200) + '...' : entry.definition);
+                // Use short_definition if available (it has POS badge and cleaned text)
+                var displayDef = entry.short_definition || def;
                 return '<div style="padding:6px 0;border-bottom:1px solid #f0ebe4;">' +
                     '<div style="font-weight:700;color:#4a2c1a;font-size:1em;">' +
                     hw + ' <span style="font-weight:400;font-size:0.75em;color:#aaa;">' +
                     entry.source + '</span></div>' +
-                    '<div style="margin-top:2px;color:#333;white-space:pre-wrap;font-size:0.9em;">' + def + '</div></div>';
+                    '<div style="margin-top:2px;color:#333;white-space:pre-wrap;font-size:0.9em;">' + formatDef(displayDef) + '</div></div>';
             }}
             
             viewer.addEventListener('mouseenter', function() {{
@@ -3088,7 +3132,7 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                         if (displayDef) {{
                             html += '<div style="margin-top:10px;color:#2f2a24;white-space:pre-wrap;font-size:1rem;line-height:1.75;">' +
                                 '<div style="font-size:0.8em;font-weight:600;color:#9a7a52;margin-bottom:4px;">Definition</div>' +
-                                '— ' + displayDef + '</div>';
+                                formatDef(displayDef) + '</div>';
                         }}
                         // Full entry toggle (collapsible, formatted)
                         var formattedEntry = r.formatted_entry || '';
