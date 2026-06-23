@@ -1445,6 +1445,34 @@ def format_greek_entry(raw_def, truncate=True):
     return ''.join(html_parts)
 
 
+def _convert_beta_in_text(text):
+    """Convert Beta Code fragments embedded in definition text to Greek.
+    
+    Splits text into whitespace-delimited tokens, converts any token
+    that looks like Beta Code (letter + diacritic marker) to Greek.
+    """
+    import re
+    
+    def try_convert(word):
+        if not word:
+            return word
+        # Strip trailing punctuation for conversion attempt
+        clean = word.rstrip('.,;:·\'"()[]{}!?')
+        punct = word[len(clean):]
+        if not clean:
+            return word
+        # Check if this looks like Beta Code: has letter + diacritic
+        if re.search(r'[a-z][)(/\\=+|^*]', clean):
+            converted = beta_to_greek(clean)
+            has_greek = any(0x0370 < ord(c) < 0x0400 for c in converted)
+            if has_greek and converted != clean:
+                return converted + punct
+        return word
+    
+    parts = text.split(' ')
+    return ' '.join(try_convert(p) for p in parts)
+
+
 def parse_lsj_entry(xml_path):
     """Extract dictionary entries from LSJ/Lewis & Short XML (TEI P4 format)."""
     entries = []
@@ -1519,6 +1547,13 @@ def parse_lsj_entry(xml_path):
                 full_def = " | ".join(def_parts[:8])
                 if len(def_parts) > 8:
                     full_def += f" ... (+{len(def_parts)-8} more)"
+            
+            # Convert Beta Code to Greek in definition text and normalize whitespace
+            # (definitions may contain Beta Code from orth/sense text even when no <tr> elements exist)
+            full_def = full_def.replace('\n', ' ').replace('\r', ' ')
+            full_def = ' '.join(full_def.split())
+            # Convert Beta Code patterns to Greek within the definition
+            full_def = _convert_beta_in_text(full_def)
         else:
             # Latin entry: no Beta Code conversion needed
             headword = raw
