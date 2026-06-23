@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 title Perseus Minimalist v0.1
 cd /d "%~dp0"
 
