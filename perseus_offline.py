@@ -2729,8 +2729,22 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
 
             # Strategy 3: Progressive truncation for compound/derived forms
             # (e.g. προελαύνω → ἐλαύνω, συλλαμβάνω → λαμβάνω)
+            # First pass: strip from the LEFT (remove prefixes like προ-, συν-, etc.)
+            if len(lemma_plain) > 5:
+                for left_len in range(1, len(lemma_plain) - 3):
+                    stem = lemma_plain[left_len:]
+                    cur.execute(
+                        "SELECT headword, headword_greek, definition FROM dictionary_entries "
+                        "WHERE headword_plain = ? AND source = 'LSJ' LIMIT 2",
+                        (stem,),
+                    )
+                    rows = cur.fetchall()
+                    if rows:
+                        conn.close()
+                        return (rows[0][0], rows[0][1], rows[0][2])
+            # Second pass: strip from the RIGHT (remove inflected endings)
             if len(lemma_plain) > 4:
-                for trunc_len in range(len(lemma_plain) - 2, 3, -1):
+                for trunc_len in range(len(lemma_plain) - 1, len(lemma_plain) - 2, -1):
                     stem = lemma_plain[:trunc_len]
                     cur.execute(
                         "SELECT headword, headword_greek, definition FROM dictionary_entries "
