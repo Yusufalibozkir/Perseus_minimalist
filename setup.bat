@@ -65,19 +65,26 @@ if !ERRORLEVEL! neq 0 (
 echo   Packages installed successfully.
 echo.
 
-:: Step 4: Download Perseus data
+:: Step 4: Download Perseus data (skip if already done)
 set /a "step+=1"
-echo [%step%/4] Downloading texts and dictionaries from Perseus...
-echo   This downloads ~930 MB of Greek and Latin texts.
-echo   The script will also build the search index afterward.
-echo.
-set "STANZA_RESOURCES_DIR=%~dp0perseus_data\stanza_cache"
-.venv\Scripts\python.exe perseus_offline.py download
-if !ERRORLEVEL! neq 0 (
+echo [%step%/4] Checking for existing data...
+if exist "perseus_data\perseus_index.db" (
+    echo   Database found — data already downloaded, skipping.
+    echo   To re-download, delete perseus_data\perseus_index.db and run again.
+) else (
+    echo   Downloading texts and dictionaries from Perseus...
+    echo   This downloads ~930 MB of Greek and Latin texts.
+    echo   The script will also build the search index afterward.
     echo.
-    echo   Data download had issues. Check your internet connection.
-    pause
-    exit /b 1
+    set "STANZA_RESOURCES_DIR=%~dp0perseus_data\stanza_cache"
+    .venv\Scripts\python.exe perseus_offline.py download
+    if !ERRORLEVEL! neq 0 (
+        echo.
+        echo   Data download had issues. Check your internet connection.
+        echo   If the repos are already downloaded, just run "start.bat".
+        pause
+        exit /b 1
+    )
 )
 
 :: Done
