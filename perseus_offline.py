@@ -1659,12 +1659,22 @@ def rebuild_fts(conn):
     """Rebuild FTS indexes from the main tables."""
     log("  Rebuilding full-text search indexes...")
     cur = conn.cursor()
+    # Drop and recreate FTS tables to avoid content-sync issues
     cur.executescript("""
-        DELETE FROM texts_fts;
+        DROP TABLE IF EXISTS texts_fts;
+        DROP TABLE IF EXISTS dict_fts;
+        
+        CREATE VIRTUAL TABLE texts_fts USING fts5(
+            author, title, full_text, content='texts', content_rowid='id'
+        );
+        CREATE VIRTUAL TABLE dict_fts USING fts5(
+            headword, headword_greek, headword_plain, definition,
+            content='dictionary_entries', content_rowid='id'
+        );
+        
         INSERT INTO texts_fts (rowid, author, title, full_text)
         SELECT id, author, title, full_text FROM texts;
         
-        DELETE FROM dict_fts;
         INSERT INTO dict_fts (rowid, headword, headword_greek, headword_plain, definition)
         SELECT id, headword, headword_greek, headword_plain, definition FROM dictionary_entries;
     """)
@@ -3653,8 +3663,6 @@ def cmd_rebuild():
     cur = conn.cursor()
     cur.execute("DELETE FROM texts")
     cur.execute("DELETE FROM dictionary_entries")
-    cur.execute("DELETE FROM texts_fts")
-    cur.execute("DELETE FROM dict_fts")
     conn.commit()
     
     index_greek_latin_texts(conn, download_dir, "greek")
