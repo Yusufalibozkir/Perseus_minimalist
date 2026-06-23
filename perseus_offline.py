@@ -1057,11 +1057,24 @@ def clean_latin_definition(raw_def, lemma_info=None):
     def_text = re.sub(r'\[.*?\]', '', def_text)
     # Strip parenthetical cross-references
     def_text = re.sub(r'\([^)]*\b(cf\.|id\.|ib\.|ibid\.|l\.l\.|s\.v\.|sqq?\.)[^)]*\)', '', def_text)
-    # Strip author citations at sentence boundaries
-    author_pat = r'(?:^|[.;])\s*(?=(?:Plaut|Cic|Ter|Verg|Hor|Ov|Liv|Caes|Catull|Tib|Prop|Plin|Quint|Tac|Suet|Stat|Lucr|Juv|Mart|Sen|Curt|Just|Gell|Nep|Phaedr|Enn|Lucil|Pacuv|Acc|Afran|Caecil|Apul|Amm|Eutr|Fest|Prisc|Charis|Diom|Don|Serv|Schol|Aug|Hier|Ambros|Greg|Isid|H\.|Id\.|Ib\.)\.)'
-    author_match = re.search(author_pat, def_text)
-    if author_match:
-        def_text = def_text[:author_match.start() + 1]
+    # Strip author citations: drop segments that look like citations
+    # (start with author name, "id.", "ib.", "ibid.", etc.)
+    citation_start = r'^(?:\s*(?:Plaut(?:\.|us)|Cic\.|Ter\.|Verg\.|Hor\.|Ov\.|Liv\.|Caes\.|Catull\.|Tib\.|Prop\.|Plin\.|Quint\.|Tac\.|Suet\.|Stat\.|Lucr\.|Juv\.|Mart\.|Sen\.|Curt\.|Just\.|Gell\.|Nep\.|Phaedr\.|Enn\.|Lucil\.|Pacuv\.|Acc\.|Afran\.|Caecil\.|Apul\.|Amm\.|Eutr\.|Fest\.|Prisc\.|Charis\.|Diom\.|Don\.|Serv\.|Schol\.|Aug\.|Hier\.|Ambros\.|Greg\.|Isid\.|H\.|Id\.|Ib\.|ib\.|id\.))'
+    segs = [s.strip() for s in def_text.split('|')]
+    clean_segs = [s for s in segs if not re.match(citation_start, s)]
+    if not clean_segs:
+        # All segments looked like citations — use last one (may contain definition after citations)
+        clean_segs = [segs[-1]]
+    def_text = ' | '.join(clean_segs)
+    
+    # Trim inline citations: find the first definition marker after citation text
+    for sep in ['.—Hence', '.—Hence,', '.—Cf.', '.—']:
+        idx = def_text.find(sep)
+        if idx > 0:
+            rest = def_text[idx + len(sep):].strip().lstrip(',;: ')
+            if rest and len(rest) > 5:
+                def_text = rest
+                break
     
     # Strip sense markers
     sense_pat = r'(?:^|[.;])\s*(?=(?:Absol|Transf?|Metaph?|Esp\.|Freq\.|Poet\.|In\s+gen\.|In\s+partic\.|In\s+pass\.|With\s+acc\.|With\s+dat\.|With\s+gen\.|With\s+abl\.|With\s+inf\.|With\s+ut|With\s+ne|With\s+clause)\b)'
@@ -2475,12 +2488,16 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                 def_text = definition
             else:
                 def_text = definition[:200] + "…" if len(definition) > 200 else definition
-            short_def = clean_latin_definition(definition, '')
+            short_def = ''
+            if source == 'Lewis & Short':
+                short_def = clean_latin_definition(definition, '')
+                if short_def == headword:
+                    short_def = ''
             entries.append({
                 "headword": headword,
                 "headword_greek": headword_greek or "",
                 "definition": def_text,
-                "short_definition": short_def if short_def and short_def != headword else '',
+                "short_definition": short_def,
                 "source": source,
             })
         
@@ -2988,9 +3005,11 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
             
             function formatDef(text) {{
                 if (!text) return '';
-                // Color POS tags: patterns like "adv. —", "v. a. —", "adj. —", "m. —", etc.
+                // Color POS tags: patterns like "adv. —", "v. a. —", "adj. —",
+                // "m. —", "επίρρ. —", "ουσ. —", etc.
+                // Match: word(s). optionally followed by more word(s). then — separator
                 return text.replace(
-                    /^([a-zA-Z]+(?:\s[a-zA-Z]+)?\.)\s*—\s*/,
+                    /^([\w\u00C0-\u03FF]+(?:\s[\w\u00C0-\u03FF]+)?\.)\s*—\s*/,
                     '<span style="display:inline-block;background:#e8ddd0;color:#6a4a2a;font-size:0.8em;font-weight:600;padding:1px 6px;border-radius:3px;margin-right:4px;">$1</span> — '
                 );
             }}
