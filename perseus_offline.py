@@ -593,6 +593,7 @@ IRREGULAR_LATIN_FORMS = {
     'meorum': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'P', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
     'mearum': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'GEN', 'number': 'P', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
     'meis': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'DAT', 'number': 'P', 'gender': None, 'tense': '', 'voice': '', 'mood': '', 'person': ''},
+    'meo': {'lemma': 'meus', 'pos': 'ADJ', 'case': 'DAT', 'number': 'S', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
     'tuus': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'M', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
     'tua': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'F', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
     'tuum': {'lemma': 'tuus', 'pos': 'ADJ', 'case': 'NOM', 'number': 'S', 'gender': 'N', 'tense': '', 'voice': '', 'mood': '', 'person': ''},
@@ -829,6 +830,8 @@ def analyze_latin_word(word, morph_data):
     results = []
     
     # 1. Check hardcoded irregular forms first (sum/esse, eo, volo, etc.)
+    # Note: don't return early — also run normal analysis to catch
+    # ambiguous forms (e.g. "meo" = verb "meare" OR dative of "meus")
     if word in IRREGULAR_LATIN_FORMS:
         irr = IRREGULAR_LATIN_FORMS[word]
         results.append({
@@ -840,9 +843,10 @@ def analyze_latin_word(word, morph_data):
             'mood': irr['mood'],
             'person': irr['person'],
             'number': irr['number'],
+            'case': irr.get('case', ''),
+            'gender': irr.get('gender', ''),
             'definition': '',
         })
-        return results
     
     # 2. Check UNIQUES first (irregular forms from data)
     if word in morph_data['uniques']:
