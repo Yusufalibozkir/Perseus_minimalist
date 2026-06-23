@@ -875,7 +875,58 @@ def analyze_latin_word(word, morph_data):
                             })
                             break
     
-    # 3. Try noun/adjective/pronoun analysis (declension patterns)
+    # 4. Try gerund / gerundive analysis BEFORE noun analysis
+    # (gerund forms like "agendum" should match the verb "ago", not the noun "agendicum")
+    if not results:
+        gerund_suffixes = ('ndum', 'ndi', 'ndo', 'ndae', 'ndorum', 'ndarum',
+                           'ndis', 'ndos', 'ndas', 'ndorum', 'ndam', 'ndas')
+        for suffix in gerund_suffixes:
+            if len(word) > len(suffix) + 2 and word.endswith(suffix):
+                base = word[:-len(suffix)]
+                base_candidates = [base]
+                if len(base) > 2:
+                    base_candidates.append(base[:-1])
+                if len(base) > 3:
+                    base_candidates.append(base[:-2])
+                for bc in base_candidates:
+                    if bc in stem_set:
+                        for lemma_entry in lemmas:
+                            lemma, pos, type_code, meaning, stems = lemma_entry
+                            if pos == 'V' and bc in [s for s in stems if s and s != 'zzz']:
+                                case_num = ''
+                                if suffix == 'ndi':
+                                    case_num = 'genitive singular'
+                                elif suffix == 'ndo':
+                                    case_num = 'dative/ablative singular'
+                                elif suffix == 'ndae':
+                                    case_num = 'genitive/dative singular feminine'
+                                elif suffix in ('ndorum', 'ndarum'):
+                                    case_num = 'genitive plural'
+                                elif suffix == 'ndis':
+                                    case_num = 'dative/ablative plural'
+                                else:
+                                    case_num = 'accusative singular'
+                                results.append({
+                                    'word': word,
+                                    'lemma': lemma,
+                                    'pos': 'V',
+                                    'tense': '',
+                                    'voice': '',
+                                    'mood': 'GERUNDIVE',
+                                    'case': case_num,
+                                    'number': 'S' if suffix in ('ndum', 'ndi', 'ndo', 'ndae') else 'P',
+                                    'gender': '',
+                                    'type_code': type_code,
+                                    'stems': stems,
+                                    'definition': meaning[:200],
+                                })
+                                break
+                        if results:
+                            break
+                if results:
+                    break
+    
+    # 5. Try noun/adjective/pronoun analysis (declension patterns)
     noun_endings = morph_data['noun_endings']
     noun_pos = {'N', 'ADJ', 'PRON', 'NUM', 'VPAR'}
     if not results:
