@@ -2978,12 +2978,14 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                             html += '<div style="margin-top:8px;font-style:italic;color:#7a5a3a;">' +
                                 r.morphology.tags_display + '</div>';
                         }}
-                        // Clean short definition
+                        // Clean short definition (fallback to raw definition if no morphology)
                         var shortDef = r.short_definition || '';
-                        if (shortDef) {{
+                        var rawDef = r.definition || '';
+                        var displayDef = shortDef || rawDef;
+                        if (displayDef) {{
                             html += '<div style="margin-top:10px;color:#2f2a24;white-space:pre-wrap;font-size:1rem;line-height:1.75;">' +
                                 '<div style="font-size:0.8em;font-weight:600;color:#9a7a52;margin-bottom:4px;">Definition</div>' +
-                                '— ' + shortDef + '</div>';
+                                '— ' + displayDef + '</div>';
                         }}
                         // Full entry toggle (collapsible, formatted)
                         var formattedEntry = r.formatted_entry || '';
@@ -2993,9 +2995,18 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                             html += '<div style="margin-top:8px;border-top:1px solid #efe6d8;padding-top:10px;">' +
                                 '<button type="button" style="cursor:pointer;background:none;border:1px solid #d4c5b0;border-radius:4px;padding:4px 12px;font-size:0.82em;color:#7a5a3a;" ' +
                                 'onclick="var e=document.getElementById(\\'' + toggleId + '\\');e.style.display=e.style.display===\\'none\\'?\\'block\\':\\'none\\';">' +
-                                'Toggle full Lewis & Short entry</button>' +
+                                'Toggle full entry</button>' +
                                 '<div id="' + toggleId + '" style="display:none;margin-top:8px;font-size:0.92rem;line-height:1.7;background:#f9f6f1;padding:14px 16px;border-radius:6px;border:1px solid #e8ddd0;">' +
                                 formattedEntry + '</div></div>';
+                        }} else if (fullDef && fullDef !== displayDef) {{
+                            // Fallback: show raw definition in collapsible section
+                            var toggleId = 'fullEntry_' + i;
+                            html += '<div style="margin-top:8px;border-top:1px solid #efe6d8;padding-top:10px;">' +
+                                '<button type="button" style="cursor:pointer;background:none;border:1px solid #d4c5b0;border-radius:4px;padding:4px 12px;font-size:0.82em;color:#7a5a3a;" ' +
+                                'onclick="var e=document.getElementById(\\'' + toggleId + '\\');e.style.display=e.style.display===\\'none\\'?\\'block\\':\\'none\\';">' +
+                                'Toggle full entry</button>' +
+                                '<div id="' + toggleId + '" style="display:none;margin-top:8px;font-size:0.92rem;line-height:1.7;background:#f9f6f1;padding:14px 16px;border-radius:6px;border:1px solid #e8ddd0;">' +
+                                fullDef + '</div></div>';
                         }}
                         html += '</article>';
                     }}
