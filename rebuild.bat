@@ -1,10 +1,12 @@
 @echo off
 setlocal enabledelayedexpansion
-title Perseus Minimalist v0.1 — Rebuild
+title Perseus Minimalist v0.1 — Fresh Rebuild
 cd /d "%~dp0"
 
 echo ========================================
-echo  Perseus Minimalist v0.1 — Rebuild Index
+echo  Perseus Minimalist v0.1 — Fresh Rebuild
+echo  This will delete ALL data and re-download
+echo  everything from Perseus (~930 MB).
 echo ========================================
 echo.
 
@@ -16,27 +18,33 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
-:: Check repos
-if not exist "perseus_data\repos\greek\data" (
-    echo No downloaded repos found. Run "setup.bat" first.
-    pause
-    exit /b 1
-)
+echo Press Ctrl+C to cancel, or any key to continue...
+pause >nul
 
-echo [1/2] Clearing old database...
+echo.
+echo [1/3] Deleting all old data...
 if exist "perseus_data\perseus_index.db" del "perseus_data\perseus_index.db"
 if exist "perseus_data\perseus_index.db-journal" del "perseus_data\perseus_index.db-journal"
 if exist "perseus_data\perseus_index.db-wal" del "perseus_data\perseus_index.db-wal"
 if exist "perseus_data\perseus_index.db-shm" del "perseus_data\perseus_index.db-shm"
-echo   Done.
+if exist "perseus_data\repos" rmdir /s /q "perseus_data\repos"
+if exist "perseus_data\stanza_cache" rmdir /s /q "perseus_data\stanza_cache"
+echo   Done. All data cleared.
 
-echo [2/2] Rebuilding index from existing repos...
 echo.
-.venv\Scripts\python.exe perseus_offline.py rebuild
+echo [2/3] Downloading fresh data from Perseus...
+.venv\Scripts\python.exe perseus_offline.py download
+if !ERRORLEVEL! neq 0 (
+    echo   Download failed. Check your internet connection.
+    pause
+    exit /b 1
+)
 
+echo.
+echo [3/3] Done!
 echo.
 echo ========================================
-echo  Rebuild complete!
+echo  Fresh rebuild complete!
 echo  Run "start.bat" to launch the viewer.
 echo ========================================
 echo.
