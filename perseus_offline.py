@@ -907,70 +907,68 @@ def analyze_latin_word(word, morph_data):
     
     # 4. Try gerund / gerundive analysis BEFORE noun analysis
     # (gerund forms like "agendum" should match the verb "ago", not the noun "agendicum")
-    if not results:
-        gerund_suffixes = ('ndum', 'ndi', 'ndo', 'ndae', 'ndorum', 'ndarum',
-                           'ndis', 'ndos', 'ndas', 'ndorum', 'ndam', 'ndas')
-        for suffix in gerund_suffixes:
-            if len(word) > len(suffix) + 2 and word.endswith(suffix):
-                base = word[:-len(suffix)]
-                base_candidates = [base]
-                if len(base) > 2:
-                    base_candidates.append(base[:-1])
-                if len(base) > 3:
-                    base_candidates.append(base[:-2])
-                for bc in base_candidates:
-                    if bc in stem_set:
-                        for lemma_entry in lemmas:
-                            lemma, pos, type_code, meaning, stems = lemma_entry
-                            if pos == 'V' and bc in [s for s in stems if s and s != 'zzz']:
-                                case_num = ''
-                                if suffix == 'ndi':
-                                    case_num = 'genitive singular'
-                                elif suffix == 'ndo':
-                                    case_num = 'dative/ablative singular'
-                                elif suffix == 'ndae':
-                                    case_num = 'genitive/dative singular feminine'
-                                elif suffix in ('ndorum', 'ndarum'):
-                                    case_num = 'genitive plural'
-                                elif suffix == 'ndis':
-                                    case_num = 'dative/ablative plural'
-                                else:
-                                    case_num = 'accusative singular'
-                                results.append({
-                                    'word': word,
-                                    'lemma': lemma,
-                                    'pos': 'V',
-                                    'tense': '',
-                                    'voice': '',
-                                    'mood': 'GERUNDIVE',
-                                    'case': case_num,
-                                    'number': 'S' if suffix in ('ndum', 'ndi', 'ndo', 'ndae') else 'P',
-                                    'gender': '',
-                                    'type_code': type_code,
-                                    'stems': stems,
-                                    'definition': meaning[:200],
-                                })
-                                break
-                        if results:
+    gerund_suffixes = ('ndum', 'ndi', 'ndo', 'ndae', 'ndorum', 'ndarum',
+                       'ndis', 'ndos', 'ndas', 'ndorum', 'ndam', 'ndas')
+    for suffix in gerund_suffixes:
+        if len(word) > len(suffix) + 2 and word.endswith(suffix):
+            base = word[:-len(suffix)]
+            base_candidates = [base]
+            if len(base) > 2:
+                base_candidates.append(base[:-1])
+            if len(base) > 3:
+                base_candidates.append(base[:-2])
+            for bc in base_candidates:
+                if bc in stem_set:
+                    for lemma_entry in lemmas:
+                        lemma, pos, type_code, meaning, stems = lemma_entry
+                        if pos == 'V' and bc in [s for s in stems if s and s != 'zzz']:
+                            case_num = ''
+                            if suffix == 'ndi':
+                                case_num = 'genitive singular'
+                            elif suffix == 'ndo':
+                                case_num = 'dative/ablative singular'
+                            elif suffix == 'ndae':
+                                case_num = 'genitive/dative singular feminine'
+                            elif suffix in ('ndorum', 'ndarum'):
+                                case_num = 'genitive plural'
+                            elif suffix == 'ndis':
+                                case_num = 'dative/ablative plural'
+                            else:
+                                case_num = 'accusative singular'
+                            results.append({
+                                'word': word,
+                                'lemma': lemma,
+                                'pos': 'V',
+                                'tense': '',
+                                'voice': '',
+                                'mood': 'GERUNDIVE',
+                                'case': case_num,
+                                'number': 'S' if suffix in ('ndum', 'ndi', 'ndo', 'ndae') else 'P',
+                                'gender': '',
+                                'type_code': type_code,
+                                'stems': stems,
+                                'definition': meaning[:200],
+                            })
                             break
-                if results:
-                    break
+                    if results:
+                        break
+            if results:
+                break
     
     # 5. Try noun/adjective/pronoun analysis (declension patterns)
     noun_endings = morph_data['noun_endings']
     noun_pos = {'N', 'ADJ', 'PRON', 'NUM', 'VPAR'}
-    if not results:
-        for split_pos in range(2, len(word)):
-            stem = word[:split_pos]
-            ending = word[split_pos:]
-            
-            if stem in stem_set and ending in noun_endings:
-                for lemma_entry in lemmas:
-                    lemma, pos, type_code, meaning, stems = lemma_entry
-                    if pos not in noun_pos:
-                        continue
-                    if stem in [s for s in stems if s and s != 'zzz']:
-                        # Extract declension number from type_code
+    for split_pos in range(2, len(word)):
+        stem = word[:split_pos]
+        ending = word[split_pos:]
+        
+        if stem in stem_set and ending in noun_endings:
+            for lemma_entry in lemmas:
+                lemma, pos, type_code, meaning, stems = lemma_entry
+                if pos not in noun_pos:
+                    continue
+                if stem in [s for s in stems if s and s != 'zzz']:
+                    # Extract declension number from type_code
                         # V/N: "1" → "1", ADJ: "J 3" → "3"
                         lemma_decl = type_code.split()[-1] if type_code else ''
                         for rule in noun_endings[ending]:
@@ -2573,17 +2571,19 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                 lemma = a.get('lemma', '')
                 definition = a.get('definition', '')
                 tags_display = format_morph_tags(a)
+                a_pos = a.get('pos', '')
                 
                 # Try to get dictionary definition and proper headword
-                dict_info = self._lookup_lemma_full(lemma, "Lewis & Short")
+                dict_info = self._lookup_lemma_full(lemma, "Lewis & Short", pos_hint=a_pos)
                 dict_headword = dict_info[0] if dict_info else None
                 dict_def = dict_info[1] if dict_info else None
                 display_lemma = dict_headword or lemma
                 
-                # Skip duplicate lemmas
-                if display_lemma in seen_lemmas:
+                # Skip duplicate lemmas (differentiate by POS to keep both verb and noun)
+                dedup_key = f"{display_lemma}::{a_pos}"
+                if dedup_key in seen_lemmas:
                     continue
-                seen_lemmas.add(display_lemma)
+                seen_lemmas.add(dedup_key)
                 
                 # Generate clean short definition
                 ww_meaning = a.get('definition', '')
@@ -2713,7 +2713,7 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
         result = self._lookup_lemma_full(lemma, source)
         return result[1] if result else None
 
-    def _lookup_lemma_full(self, lemma, source):
+    def _lookup_lemma_full(self, lemma, source, pos_hint=None):
         """Look up a dictionary headword and definition for a lemma.
         Tries exact match, then common headword forms, then prefix match.
         Returns (headword, definition) or None."""
@@ -2746,17 +2746,32 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
                 "SELECT headword, definition FROM dictionary_entries "
                 "WHERE headword_plain IN ({}) AND source = ? "
                 "ORDER BY LENGTH(headword) ASC "
-                "LIMIT 3".format(placeholders),
+                "LIMIT 10".format(placeholders),
                 tuple(unique_candidates) + (source,),
             )
             rows = cur.fetchall()
             if rows:
                 conn.close()
-                # Prefer headwords that are common Latin verbs (end in o/or)
-                for headword, definition in rows:
-                    hw = headword.lower()
-                    if hw.endswith('or') or hw.endswith('o'):
-                        return (headword, definition)
+                if pos_hint == 'N':
+                    # For nouns, prefer us > um > a endings (in that order)
+                    best_pair = None
+                    best_rank = 99
+                    for headword, definition in rows:
+                        hw = headword.lower()
+                        if hw.endswith('us'):
+                            if 0 < best_rank: best_pair = (headword, definition); best_rank = 0
+                        elif hw.endswith('um'):
+                            if 1 < best_rank: best_pair = (headword, definition); best_rank = 1
+                        elif hw.endswith('a'):
+                            if 2 < best_rank: best_pair = (headword, definition); best_rank = 2
+                    if best_pair:
+                        return best_pair
+                else:
+                    # For verbs (and default), prefer headwords ending in o/or
+                    for headword, definition in rows:
+                        hw = headword.lower()
+                        if hw.endswith('or') or hw.endswith('o'):
+                            return (headword, definition)
                 return (rows[0][0], rows[0][1])
             
             # Fallback: prefix match
@@ -2770,11 +2785,26 @@ class PerseusHandler(http.server.BaseHTTPRequestHandler):
             rows = cur.fetchall()
             conn.close()
             if rows:
-                # Prefer headwords ending in 'or' (deponent) or 'o' (regular verb)
-                for headword, definition in rows:
-                    hw = headword.lower()
-                    if hw.endswith('or') or hw.endswith('o'):
-                        return (headword, definition)
+                if pos_hint == 'N':
+                    # For nouns, prefer us > um > a endings
+                    best_pair = None
+                    best_rank = 99
+                    for headword, definition in rows:
+                        hw = headword.lower()
+                        if hw.endswith('us'):
+                            if 0 < best_rank: best_pair = (headword, definition); best_rank = 0
+                        elif hw.endswith('um'):
+                            if 1 < best_rank: best_pair = (headword, definition); best_rank = 1
+                        elif hw.endswith('a'):
+                            if 2 < best_rank: best_pair = (headword, definition); best_rank = 2
+                    if best_pair:
+                        return best_pair
+                else:
+                    # For verbs (and default), prefer o/or endings
+                    for headword, definition in rows:
+                        hw = headword.lower()
+                        if hw.endswith('or') or hw.endswith('o'):
+                            return (headword, definition)
                 return (rows[0][0], rows[0][1])
             
             conn.close()
